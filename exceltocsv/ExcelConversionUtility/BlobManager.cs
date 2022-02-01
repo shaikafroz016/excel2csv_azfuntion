@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using System.Collections.Generic;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage;
 
 namespace ExcelConversionUtility
 {
@@ -42,23 +44,39 @@ namespace ExcelConversionUtility
                 throw ex;
             }
         }
+        
 
-        public async Task<List<BlobOutput>> Download(string containerName)
+        public async Task<List<BlobOutput>> Download(string containerName,string name)
         {
             var downloadedData = new List<BlobOutput>();
             try
             {
-                // Create service and container client for blob
-                BlobContainerClient blobContainerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+                
+                //---------------------------------------------------------------------------------------
+                CloudStorageAccount sourceAccount = CloudStorageAccount.Parse(Constants.ConnectionString);
+                CloudBlobClient sourceClient = sourceAccount.CreateCloudBlobClient();
+                CloudBlobClient destClient = sourceAccount.CreateCloudBlobClient();
+                // To download the contents
+                CloudBlobContainer sourceBlobContainer = sourceClient.GetContainerReference(containerName);
+                ICloudBlob sourceBlob = await sourceBlobContainer.GetBlobReferenceFromServerAsync(name);
+                
+                await sourceBlob.DownloadToFileAsync(name, System.IO.FileMode.Create);
 
-                // List all blobs in the container
-                await foreach (BlobItem item in blobContainerClient.GetBlobsAsync())
-                {
-                    // Download the blob's contents and save it to a file
-                    BlobClient blobClient = blobContainerClient.GetBlobClient(item.Name);
-                    BlobDownloadInfo downloadedInfo = await blobClient.DownloadAsync();
-                    downloadedData.Add(new BlobOutput { BlobName = item.Name, BlobContent = downloadedInfo.Content });
-                }
+                // To Upload the blob contents to destination container
+                CloudBlobContainer destBlobContainer = destClient.GetContainerReference(Constants.ExcelCopyContainer);
+                string newFilename = $"copy_{name}";
+                CloudBlockBlob destBlob = destBlobContainer.GetBlockBlobReference(newFilename);
+                await destBlob.UploadFromFileAsync(name);
+                //-------------------------------------------------------------------------------------
+
+                // Create service and container client for blob
+                BlobContainerClient blobContainerClient = _blobServiceClient.GetBlobContainerClient(Constants.ExcelCopyContainer);
+                // Download the blob's contents and save it to a file
+                BlobClient blobClient = blobContainerClient.GetBlobClient(newFilename);
+                BlobDownloadInfo downloadedInfo = await blobClient.DownloadAsync();
+
+                downloadedData.Add(new BlobOutput { BlobName = name, BlobContent = downloadedInfo.Content });
+                
             }
             catch (Exception ex)
             {

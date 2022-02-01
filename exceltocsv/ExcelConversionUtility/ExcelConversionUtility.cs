@@ -8,15 +8,14 @@ namespace ExcelConversionUtility
     /// </summary>
     public class ExcelConversionUtility
     {
-        public async Task Process()
+        public async Task Process(string name)
         {
             try
             {
+
                 var blobManager = new BlobManager(Constants.ConnectionString);
-
                 // download the blobs from given blob container 
-                var results = await blobManager.Download(Constants.ExcelContainerName);
-
+                var results = await blobManager.Download(Constants.ExcelContainerName,name);
                 // convert stremed excel content to csv and send back the content in the form of stream
                 var blobs = ExcelToCSVConvertor.Convert(results);
 
