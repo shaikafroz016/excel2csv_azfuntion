@@ -24,7 +24,10 @@ namespace ExcelConversionUtility
             Aspose.Cells.Workbook workbook = new Aspose.Cells.Workbook();
             WorksheetCollection worksheets = workbook.Worksheets;
 
+            //License license = new License();
 
+            //// Set the license of Aspose.Cells to avoid the evaluation limitations
+            //license.SetLicense("Aspose.Cells.lic");
             var dataForBlobInput = new List<BlobInput>();
             try
             {
@@ -42,10 +45,15 @@ namespace ExcelConversionUtility
 
                             SharedStringTablePart _SharedStringTablePart = document.WorkbookPart.GetPartsOfType<SharedStringTablePart>().First();
                             SharedStringItem[] _SharedStringItem = _SharedStringTablePart.SharedStringTable.Elements<SharedStringItem>().ToArray();
-
+                            
                             StringBuilder stringBuilder = new StringBuilder();
+                            int t = 1;
+                            var tempcells = worksheet.Cells;
+                            tempcells["G1"].PutValue("Status");
+                            tempcells["H1"].PutValue("updated");
                             foreach (var row in _Worksheet.Descendants<DocumentFormat.OpenXml.Spreadsheet.Row>())
                             {
+                                
                                 foreach (DocumentFormat.OpenXml.Spreadsheet.Cell _Cell in row)
                                 {
                                     
@@ -61,6 +69,7 @@ namespace ExcelConversionUtility
 
                                             cells[_Cell.CellReference].PutValue(Value);
                                             
+                                            
                                         }
                                         else
                                         {
@@ -69,14 +78,22 @@ namespace ExcelConversionUtility
                                         }
                                         }
                                     stringBuilder.Append(string.Format("{0},", Value.Trim()));
+                                    
                                 }
+                                t++;
+                                string s = "G" + t;
+                                string s1 = "H" + t;
+                                var cells1 = worksheet.Cells;
+                                cells1[s].PutValue("done");
+                                cells1[s1].PutValue("0");
+                                
                                 stringBuilder.Append("\n");
                             }
 
                             byte[] data = Encoding.UTF8.GetBytes(stringBuilder.ToString().Trim());
                             string fileNameWithoutExtn = item.BlobName.ToString().Substring(0, item.BlobName.ToString().IndexOf("."));
                             string newFilename = $"{fileNameWithoutExtn}_{_Sheet.Name}.csv";
-                            workbook.Save("ou.xlsx", SaveFormat.Xlsx);
+                            workbook.Save(item.BlobName, SaveFormat.Xlsx);
                             dataForBlobInput.Add(new BlobInput { BlobName = newFilename, BlobContent = data });
                         }
                     }

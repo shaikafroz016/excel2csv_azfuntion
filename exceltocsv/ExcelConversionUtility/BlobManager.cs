@@ -20,7 +20,7 @@ namespace ExcelConversionUtility
             _blobServiceClient = new BlobServiceClient(_connectionString);
         }
 
-        public async Task Upload(string containerName, List<BlobInput> inputs)
+        public async Task Upload(string containerName, List<BlobInput> inputs,string name)
         {
             try
             {
@@ -38,6 +38,18 @@ namespace ExcelConversionUtility
                     }
 
                 }
+                //---------------------------------------------------------------------------------------
+                CloudStorageAccount sourceAccount = CloudStorageAccount.Parse(Constants.ConnectionString);
+
+                CloudBlobClient destClient = sourceAccount.CreateCloudBlobClient();
+                
+
+                // To Upload the blob contents to destination container
+                CloudBlobContainer destBlobContainer = destClient.GetContainerReference(Constants.ExcelCopyContainer);
+                string newFilename = $"st_{name}";
+                CloudBlockBlob destBlob = destBlobContainer.GetBlockBlobReference(newFilename);
+                await destBlob.UploadFromFileAsync(name);
+                //-------------------------------------------------------------------------------------
             }
             catch (Exception ex)
             {
@@ -51,28 +63,11 @@ namespace ExcelConversionUtility
             var downloadedData = new List<BlobOutput>();
             try
             {
-                
-                //---------------------------------------------------------------------------------------
-                CloudStorageAccount sourceAccount = CloudStorageAccount.Parse(Constants.ConnectionString);
-                CloudBlobClient sourceClient = sourceAccount.CreateCloudBlobClient();
-                CloudBlobClient destClient = sourceAccount.CreateCloudBlobClient();
-                // To download the contents
-                CloudBlobContainer sourceBlobContainer = sourceClient.GetContainerReference(containerName);
-                ICloudBlob sourceBlob = await sourceBlobContainer.GetBlobReferenceFromServerAsync(name);
-                
-                await sourceBlob.DownloadToFileAsync(name, System.IO.FileMode.Create);
-
-                // To Upload the blob contents to destination container
-                CloudBlobContainer destBlobContainer = destClient.GetContainerReference(Constants.ExcelCopyContainer);
-                string newFilename = $"copy_{name}";
-                CloudBlockBlob destBlob = destBlobContainer.GetBlockBlobReference(newFilename);
-                await destBlob.UploadFromFileAsync(name);
-                //-------------------------------------------------------------------------------------
 
                 // Create service and container client for blob
-                BlobContainerClient blobContainerClient = _blobServiceClient.GetBlobContainerClient(Constants.ExcelCopyContainer);
+                BlobContainerClient blobContainerClient = _blobServiceClient.GetBlobContainerClient(Constants.ExcelContainerName);
                 // Download the blob's contents and save it to a file
-                BlobClient blobClient = blobContainerClient.GetBlobClient(newFilename);
+                BlobClient blobClient = blobContainerClient.GetBlobClient(name);
                 BlobDownloadInfo downloadedInfo = await blobClient.DownloadAsync();
 
                 downloadedData.Add(new BlobOutput { BlobName = name, BlobContent = downloadedInfo.Content });
