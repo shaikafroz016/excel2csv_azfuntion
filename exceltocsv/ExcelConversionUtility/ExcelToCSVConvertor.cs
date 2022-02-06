@@ -23,7 +23,7 @@ namespace ExcelConversionUtility
         {
             Aspose.Cells.Workbook workbook = new Aspose.Cells.Workbook();
             WorksheetCollection worksheets = workbook.Worksheets;
-
+            workbook.Worksheets.RemoveAt("Sheet1");
             //License license = new License();
 
             //// Set the license of Aspose.Cells to avoid the evaluation limitations
@@ -40,6 +40,7 @@ namespace ExcelConversionUtility
                         foreach (Sheet _Sheet in document.WorkbookPart.Workbook.Descendants<Sheet>())
                         {
                             Aspose.Cells.Worksheet worksheet = worksheets.Add(_Sheet.Name);
+                            workbook.Worksheets.RemoveAt("Evaluation Warning");
                             WorksheetPart _WorksheetPart = (WorksheetPart)document.WorkbookPart.GetPartById(_Sheet.Id);
                             DocumentFormat.OpenXml.Spreadsheet.Worksheet _Worksheet = _WorksheetPart.Worksheet;
 
