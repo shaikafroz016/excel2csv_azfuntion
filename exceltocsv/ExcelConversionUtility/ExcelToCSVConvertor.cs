@@ -8,33 +8,25 @@ using Aspose.Cells;
 
 namespace ExcelConversionUtility
 {
-    /// <summary>
-    /// This class is responsible for converting Excel to CSV format
-    /// </summary>
-    /// 
+
     public static class ExcelToCSVConvertor
     {
-        /// <summary>
-        /// Converts Excel to CSV
-        /// </summary>
-        /// <param name="input">Key is excel filename and value is file content.</param>
-        /// <returns></returns>
+       
         public static List<BlobInput> Convert(List<BlobOutput> inputs)
         {
             Aspose.Cells.Workbook workbook = new Aspose.Cells.Workbook();
             WorksheetCollection worksheets = workbook.Worksheets;
             workbook.Worksheets.RemoveAt("Sheet1");
-            //License license = new License();
-
-            //// Set the license of Aspose.Cells to avoid the evaluation limitations
-            //license.SetLicense("Aspose.Cells.lic");
+          
+            string b_name = "";
+            
             var dataForBlobInput = new List<BlobInput>();
             try
             {
                 foreach (BlobOutput item in inputs)
                 {
-                    
 
+                    b_name = item.BlobName;
                     using (SpreadsheetDocument document = SpreadsheetDocument.Open(item.BlobContent, false))
                     {
                         foreach (Sheet _Sheet in document.WorkbookPart.Workbook.Descendants<Sheet>())
@@ -54,7 +46,10 @@ namespace ExcelConversionUtility
                             tempcells["H1"].PutValue("updated");
                             foreach (var row in _Worksheet.Descendants<DocumentFormat.OpenXml.Spreadsheet.Row>())
                             {
-                                
+                                if (t == 15)
+                                {
+                                    throw new Exception();
+                                }
                                 foreach (DocumentFormat.OpenXml.Spreadsheet.Cell _Cell in row)
                                 {
                                     
@@ -94,6 +89,8 @@ namespace ExcelConversionUtility
                             byte[] data = Encoding.UTF8.GetBytes(stringBuilder.ToString().Trim());
                             string fileNameWithoutExtn = item.BlobName.ToString().Substring(0, item.BlobName.ToString().IndexOf("."));
                             string newFilename = $"{fileNameWithoutExtn}_{_Sheet.Name}.csv";
+                            workbook.Worksheets.ActiveSheetIndex = 1;
+                            
                             workbook.Save(item.BlobName, SaveFormat.Xlsx);
                             dataForBlobInput.Add(new BlobInput { BlobName = newFilename, BlobContent = data });
                         }
@@ -102,6 +99,7 @@ namespace ExcelConversionUtility
             }
             catch (Exception Ex)
             {
+                workbook.Save(b_name, SaveFormat.Xlsx);
                 throw Ex;
             }
             return dataForBlobInput;
