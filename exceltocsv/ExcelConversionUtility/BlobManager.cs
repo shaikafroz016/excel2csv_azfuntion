@@ -71,7 +71,15 @@ namespace ExcelConversionUtility
                 BlobDownloadInfo downloadedInfo = await blobClient.DownloadAsync();
 
                 downloadedData.Add(new BlobOutput { BlobName = name, BlobContent = downloadedInfo.Content });
-                
+                //---------------------------------------------------
+                CloudStorageAccount sourceAccount = CloudStorageAccount.Parse(Constants.ConnectionString);
+                CloudBlobClient sourceClient = sourceAccount.CreateCloudBlobClient();
+                CloudBlobClient destClient = sourceAccount.CreateCloudBlobClient();
+                // To download the contents
+                CloudBlobContainer sourceBlobContainer = sourceClient.GetContainerReference(containerName);
+                ICloudBlob sourceBlob = await sourceBlobContainer.GetBlobReferenceFromServerAsync(name);
+
+                await sourceBlob.DownloadToFileAsync(name, System.IO.FileMode.Create);
             }
             catch (Exception ex)
             {

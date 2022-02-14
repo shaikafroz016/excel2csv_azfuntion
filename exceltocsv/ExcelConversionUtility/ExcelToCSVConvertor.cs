@@ -5,104 +5,95 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Aspose.Cells;
+using System.Data;
 
 namespace ExcelConversionUtility
 {
-
     public static class ExcelToCSVConvertor
     {
-       
         public static List<BlobInput> Convert(List<BlobOutput> inputs)
         {
-            Aspose.Cells.Workbook workbook = new Aspose.Cells.Workbook();
-            WorksheetCollection worksheets = workbook.Worksheets;
-            workbook.Worksheets.RemoveAt("Sheet1");
-          
-            string b_name = "";
-            
+            DataTable WorkSheetMaster = new DataTable();
+            WorkSheetMaster.Columns.Add("WorksheetName");
+            WorkSheetMaster.Columns.Add("WorksheetCode");
+            WorkSheetMaster.Rows.Add(new Object[] { "Claims Data", "ClaD" });
+            WorkSheetMaster.Rows.Add(new Object[] { "Policy Data", "PolD" });
+            WorkSheetMaster.Rows.Add(new Object[] { "Client Data", "CliD" });
+            DataTable EventsConfigList = new DataTable();
+            EventsConfigList.Columns.Add("WorksheetName");
+            EventsConfigList.Columns.Add("WSFields");
+            EventsConfigList.Columns.Add("EventAssetIDMapping");
+            EventsConfigList.Columns.Add("Region");
+            EventsConfigList.Columns.Add("EventType");
+            EventsConfigList.Columns.Add("ComplianceTag");
+            EventsConfigList.Columns.Add("WSEventDateField");
+            EventsConfigList.Columns.Add("EventDateFormula");
+            EventsConfigList.Rows.Add(new Object[] { "Client Data", "CountryCode, GCID", "TCT_Code:**$”GCID”$** AND CRBCountryCode:**$”CountryCode”$**", "US, CAN, MEX, CYM, CRI", "CRB End of Client Relationship", "ACC - Client Relationship Management", "ClientEndDate", "X+5" });
+            EventsConfigList.Rows.Add(new Object[] { "Client Data", "CountryCode, GCID, Claims Ref", "TCT_Code:**$”GCID”$** AND CRBCountryCode:**$”CountryCode”$**  AND CRB_ClaimId:**$”ClaimsRef”$**", "GLOBAL", "CRB Claim Servicing Record", "INS - Broking and Reinsurance – Claims", "ClaimCloseDate", "X" });
+            EventsConfigList.Rows.Add(new Object[] { "Policy Data", "CountryCode, GCID,  External Reference", "TCT_Code:**$”GCID”$** AND CRBCountryCode:**$”CountryCode”$**  AND CRB_PolicyReference:**$”External Reference”$**", "US, CAN, MEX, CYM, CRI", "CRB Policy Expired", "INS - Broking and Reinsurance", "?", "?" });
+            EventsConfigList.Rows.Add(new Object[] { "Client Data", "CountryCode, GCID", "TCT_Code:**$”GCID”$** AND CRBCountryCode:**$”CountryCode”$**", "GLOBAL", "CRB End of Client Relationship", "ACC - Client Relationship Management", "ClientEndDate", "?-5" });
+            EventsConfigList.Rows.Add(new Object[] { "Claims Data", "CountryCode, GCID, Claims Data", "TCT_Code:**$”GCID”$** AND CRBCountryCode:**$”CountryCode”$**  AND CRB_InternalClaimNumber:**$”ClaimsRef”$**;", "US, CAN, MEX, CYM, CRI", "CRB Claim Servicing Record", "INS - Broking and Reinsurance – Claims", "ClaimClosedDate", "?+5" });
+
+
+
+            DataSet ds = new DataSet();
+            string b_name = ""; 
             var dataForBlobInput = new List<BlobInput>();
             try
             {
                 foreach (BlobOutput item in inputs)
                 {
-
+                    Aspose.Cells.Workbook workbook = new Aspose.Cells.Workbook(item.BlobName);
+                    WorksheetCollection worksheets = workbook.Worksheets;
+                    workbook.Worksheets.RemoveAt("Sheet1");
                     b_name = item.BlobName;
                     using (SpreadsheetDocument document = SpreadsheetDocument.Open(item.BlobContent, false))
                     {
+                        int x = 0;
                         foreach (Sheet _Sheet in document.WorkbookPart.Workbook.Descendants<Sheet>())
-                        {
-                            Aspose.Cells.Worksheet worksheet = worksheets.Add(_Sheet.Name);
-                            workbook.Worksheets.RemoveAt("Evaluation Warning");
-                            WorksheetPart _WorksheetPart = (WorksheetPart)document.WorkbookPart.GetPartById(_Sheet.Id);
-                            DocumentFormat.OpenXml.Spreadsheet.Worksheet _Worksheet = _WorksheetPart.Worksheet;
-
-                            SharedStringTablePart _SharedStringTablePart = document.WorkbookPart.GetPartsOfType<SharedStringTablePart>().First();
-                            SharedStringItem[] _SharedStringItem = _SharedStringTablePart.SharedStringTable.Elements<SharedStringItem>().ToArray();
-                            
-                            StringBuilder stringBuilder = new StringBuilder();
-                            int t = 1;
-                            var tempcells = worksheet.Cells;
-                            tempcells["G1"].PutValue("Status");
-                            tempcells["H1"].PutValue("updated");
-                            foreach (var row in _Worksheet.Descendants<DocumentFormat.OpenXml.Spreadsheet.Row>())
+                              {
+                            var st = Vali(WorkSheetMaster, _Sheet.Name);
+                            if (st != null)
                             {
-                                if (t == 15)
-                                {
-                                    throw new Exception();
-                                }
-                                foreach (DocumentFormat.OpenXml.Spreadsheet.Cell _Cell in row)
-                                {
-                                    
-                                    
-                                    var cells = worksheet.Cells;
-                                    
-                                    string Value = string.Empty;
-                                    if (_Cell.CellValue != null)
-                                    {
-                                        if (_Cell.DataType != null && _Cell.DataType.Value == CellValues.SharedString)
-                                        {
-                                            Value = _SharedStringItem[int.Parse(_Cell.CellValue.Text)].InnerText;
-
-                                            cells[_Cell.CellReference].PutValue(Value);
-                                            
-                                            
-                                        }
-                                        else
-                                        {
-                                            Value = _Cell.CellValue.Text;
-                                            cells[_Cell.CellReference].PutValue(Value);
-                                        }
-                                        }
-                                    stringBuilder.Append(string.Format("{0},", Value.Trim()));
-                                    
-                                }
-                                t++;
-                                string s = "G" + t;
-                                string s1 = "H" + t;
-                                var cells1 = worksheet.Cells;
-                                cells1[s].PutValue("done");
-                                cells1[s1].PutValue("0");
-                                
-                                stringBuilder.Append("\n");
+                                DataTable dt = workbook.Worksheets[0].Cells.ExportDataTable(0, 0, workbook.Worksheets[x].Cells.MaxDataRow + 1, workbook.Worksheets[x].Cells.MaxDataColumn + 1, true);
+                                dt.TableName = _Sheet.Name;
+                                ds.Tables.Add(dt);
+                                Console.WriteLine(_Sheet.Name + " is proccessed for file "+ item.BlobName);
+                                x++;
                             }
-
-                            byte[] data = Encoding.UTF8.GetBytes(stringBuilder.ToString().Trim());
-                            string fileNameWithoutExtn = item.BlobName.ToString().Substring(0, item.BlobName.ToString().IndexOf("."));
-                            string newFilename = $"{fileNameWithoutExtn}_{_Sheet.Name}.csv";
-                            workbook.Worksheets.ActiveSheetIndex = 1;
+                            else
+                            {
+                                Console.WriteLine(_Sheet.Name+ " is ignored fo file " + item.BlobName);
+                            }
                             
-                            workbook.Save(item.BlobName, SaveFormat.Xlsx);
-                            dataForBlobInput.Add(new BlobInput { BlobName = newFilename, BlobContent = data });
+                            
                         }
-                    }
+                        x = 0;
+                            }
+                           
                 }
             }
             catch (Exception Ex)
             {
-                workbook.Save(b_name, SaveFormat.Xlsx);
+               // workbook.Save(b_name, SaveFormat.Xlsx);
                 throw Ex;
             }
+            Console.WriteLine(ds.Tables.Count);
             return dataForBlobInput;
         }
+        public static string Vali(DataTable wsn, string na)
+        {
+            
+                if (wsn.Rows[0].ItemArray[0].ToString() == na  || wsn.Rows[1].ItemArray[0].ToString() == na || wsn.Rows[2].ItemArray[0].ToString() == na)
+                {
+                    return na;
+                }
+                
+                
+            
+            return null;
+        }
     }
+    
+    
 }

@@ -14,7 +14,7 @@ namespace exceltocsv
         {
             log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob.Length} Bytes");
             //ddr-> file name? excel type
-            if ((name.Trim().StartsWith("DDR")) && (name.Trim().EndsWith("xlsx")))
+            if ((name.Trim().StartsWith("CRB_DDR")) && (name.Trim().EndsWith("xlsx")))
             {
                 //checking if length is greater then 200kb then it will accept
                 if (myBlob.Length >= 200)
